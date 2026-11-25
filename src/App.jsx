@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
   Package,
@@ -8,7 +8,10 @@ import {
   History,
   AlertTriangle,
   Menu,
+  RefreshCw,
 } from "lucide-react";
+
+const API_URL = "https://samwoo-warehouse-api.umayaris06.workers.dev";
 
 const navigation = [
   { label: "Dashboard", icon: LayoutDashboard },
@@ -23,6 +26,35 @@ const navigation = [
 export default function App() {
   const [activePage, setActivePage] = useState("Dashboard");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [stock, setStock] = useState([]);
+  const [loadingStock, setLoadingStock] = useState(false);
+  const [stockError, setStockError] = useState("");
+
+  async function loadStock() {
+    setLoadingStock(true);
+    setStockError("");
+
+    try {
+      const response = await fetch(`${API_URL}/api/stock`);
+      const result = await response.json();
+
+      if (!response.ok || result.success !== true) {
+        throw new Error(result.error || "Gagal mendapatkan data stok.");
+      }
+
+      setStock(Array.isArray(result.data) ? result.data : []);
+    } catch (error) {
+      setStockError(
+        error.message || "Tidak dapat menyambung ke API. Cuba lagi."
+      );
+    } finally {
+      setLoadingStock(false);
+    }
+  }
+
+  useEffect(() => {
+    loadStock();
+  }, []);
 
   return (
     <div className="app-shell">
@@ -63,55 +95,121 @@ export default function App() {
           >
             <Menu size={20} />
           </button>
+
           <div>
             <span className="eyebrow">SAMWOO WAREHOUSE</span>
             <h1>{activePage}</h1>
           </div>
+
           <div className="user-badge">Admin</div>
         </header>
 
         <section className="page-content">
-          {activePage === "Dashboard" ? (
+          {activePage === "Dashboard" && (
             <>
               <div className="welcome">
                 <div>
                   <h2>Warehouse Overview</h2>
                   <p>Monitor stock and warehouse activity.</p>
                 </div>
-                <span className="status-pill">System setup</span>
+                <span className="status-pill">API connected</span>
               </div>
 
               <div className="stats-grid">
                 <article className="stat-card">
                   <span>Total Stock Items</span>
-                  <strong>—</strong>
-                  <small>Waiting for database connection</small>
+                  <strong>{loadingStock ? "…" : stock.length}</strong>
+                  <small>Records returned by the stock API</small>
                 </article>
+
                 <article className="stat-card">
                   <span>Pending Outgoing</span>
                   <strong>—</strong>
-                  <small>Waiting for database connection</small>
+                  <small>Not connected yet</small>
                 </article>
+
                 <article className="stat-card">
                   <span>Incoming Records</span>
                   <strong>—</strong>
-                  <small>Waiting for database connection</small>
+                  <small>Not connected yet</small>
                 </article>
+
                 <article className="stat-card">
                   <span>Low Stock Items</span>
                   <strong>—</strong>
-                  <small>Waiting for database connection</small>
+                  <small>Low-stock rule not configured yet</small>
                 </article>
               </div>
 
               <article className="panel">
                 <h3>Recent Activity</h3>
                 <p className="empty-state">
-                  Activity records will appear here after the database is connected.
+                  Activity records will appear after the movement API is added.
                 </p>
               </article>
             </>
-          ) : (
+          )}
+
+          {activePage === "Stock" && (
+            <article className="panel">
+              <div className="stock-heading">
+                <div>
+                  <h2>Stock Records</h2>
+                  <p className="empty-state">
+                    {stock.length} record(s) retrieved from the database.
+                  </p>
+                </div>
+
+                <button
+                  className="refresh-button"
+                  onClick={loadStock}
+                  disabled={loadingStock}
+                >
+                  <RefreshCw size={16} />
+                  {loadingStock ? "Loading…" : "Refresh"}
+                </button>
+              </div>
+
+              {stockError && (
+                <p className="error-message">
+                  {stockError}
+                </p>
+              )}
+
+              {loadingStock ? (
+                <p className="empty-state">Loading stock records…</p>
+              ) : stockError ? null : stock.length === 0 ? (
+                <p className="empty-state">
+                  Tiada rekod stok dalam database buat masa ini.
+                </p>
+              ) : (
+                <div className="table-wrap">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        {Object.keys(stock[0]).map((column) => (
+                          <th key={column}>{column.replaceAll("_", " ")}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {stock.map((item, index) => (
+                        <tr key={item.id ?? index}>
+                          {Object.keys(stock[0]).map((column) => (
+                            <td key={column}>
+                              {item[column] == null ? "—" : String(item[column])}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </article>
+          )}
+
+          {activePage !== "Dashboard" && activePage !== "Stock" && (
             <article className="panel">
               <h2>{activePage}</h2>
               <p className="empty-state">
