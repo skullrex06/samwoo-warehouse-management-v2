@@ -1,0 +1,13 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "samwoo-warehouse-api",
+  "main": "worker/index.js",
+  "compatibility_date": "2026-11-25",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "samwoo-warehouse-db",
+      "database_id": "58ba2f16-4fdd-4ac0-b63a-760a3b8f7b5a"
+    }
+  ]
+}
