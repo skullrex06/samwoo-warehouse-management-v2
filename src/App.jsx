@@ -29,7 +29,89 @@ export default function App() {
   const [stock, setStock] = useState([]);
   const [loadingStock, setLoadingStock] = useState(false);
   const [stockError, setStockError] = useState("");
+  const [showAddStock, setShowAddStock] = useState(false);
+const [savingStock, setSavingStock] = useState(false);
+const [addStockError, setAddStockError] = useState("");
+const [stockForm, setStockForm] = useState({
+  item_code: "",
+  item_name: "",
+  description: "",
+  unit: "",
+  quantity: "",
+  reserved_quantity: "0",
+  min_stock: "0",
+  location: "",
+});
 
+function updateStockForm(event) {
+  const { name, value } = event.target;
+  setStockForm((current) => ({ ...current, [name]: value }));
+}
+
+async function addStock(event) {
+  event.preventDefault();
+  setSavingStock(true);
+  setAddStockError("");
+
+  const payload = {
+    item_code: stockForm.item_code.trim(),
+    item_name: stockForm.item_name.trim(),
+    description: stockForm.description.trim() || null,
+    unit: stockForm.unit.trim(),
+    quantity: Number(stockForm.quantity),
+    reserved_quantity: Number(stockForm.reserved_quantity || 0),
+    min_stock: Number(stockForm.min_stock || 0),
+    location: stockForm.location.trim() || null,
+  };
+
+  if (
+    !payload.item_code ||
+    !payload.item_name ||
+    !payload.unit ||
+    stockForm.quantity === "" ||
+    !Number.isFinite(payload.quantity) ||
+    payload.quantity < 0 ||
+    !Number.isFinite(payload.reserved_quantity) ||
+    payload.reserved_quantity < 0 ||
+    !Number.isFinite(payload.min_stock) ||
+    payload.min_stock < 0
+  ) {
+    setAddStockError("Semak medan wajib dan pastikan kuantiti ialah nombor 0 atau lebih.");
+    setSavingStock(false);
+    return;
+  }
+
+  try {
+    const response = await fetch(`${API_URL}/api/stock`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok || result.success !== true) {
+      throw new Error(result.error || "Gagal menyimpan stok.");
+    }
+
+    setStockForm({
+      item_code: "",
+      item_name: "",
+      description: "",
+      unit: "",
+      quantity: "",
+      reserved_quantity: "0",
+      min_stock: "0",
+      location: "",
+    });
+    setShowAddStock(false);
+    await loadStock();
+  } catch (error) {
+    setAddStockError(error.message || "Tidak dapat menyimpan stok.");
+  } finally {
+    setSavingStock(false);
+  }
+}
   async function loadStock() {
     setLoadingStock(true);
     setStockError("");
@@ -152,8 +234,16 @@ export default function App() {
 
           {activePage === "Stock" && (
             <article className="panel">
-              <div className="stock-heading">
-                <div>
+              <div className="stock-heading"></div> 
+                  <button
+  className="refresh-button"
+  onClick={() => {
+    setShowAddStock((current) => !current);
+    setAddStockError("");
+  }}
+>
+  {showAddStock ? "Cancel" : "Add Stock"}
+</button>
                   <h2>Stock Records</h2>
                   <p className="empty-state">
                     {stock.length} record(s) retrieved from the database.
