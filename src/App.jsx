@@ -295,6 +295,102 @@ async function addStock(event) {
                     </tbody>
                   </table>
                 </div>
+      {showAddStock && (
+  <form className="stock-form" onSubmit={addStock}>
+    <label>
+      Item Code *
+      <input
+        name="item_code"
+        value={stockForm.item_code}
+        onChange={updateStockForm}
+        required
+      />
+    </label>
+
+    <label>
+      Item Name *
+      <input
+        name="item_name"
+        value={stockForm.item_name}
+        onChange={updateStockForm}
+        required
+      />
+    </label>
+
+    <label>
+      Description
+      <input
+        name="description"
+        value={stockForm.description}
+        onChange={updateStockForm}
+      />
+    </label>
+
+    <label>
+      Unit *
+      <input
+        name="unit"
+        placeholder="kg / g / unit"
+        value={stockForm.unit}
+        onChange={updateStockForm}
+        required
+      />
+    </label>
+
+    <label>
+      Quantity *
+      <input
+        type="number"
+        min="0"
+        step="any"
+        name="quantity"
+        value={stockForm.quantity}
+        onChange={updateStockForm}
+        required
+      />
+    </label>
+
+    <label>
+      Reserved Quantity
+      <input
+        type="number"
+        min="0"
+        step="any"
+        name="reserved_quantity"
+        value={stockForm.reserved_quantity}
+        onChange={updateStockForm}
+      />
+    </label>
+
+    <label>
+      Minimum Stock
+      <input
+        type="number"
+        min="0"
+        step="any"
+        name="min_stock"
+        value={stockForm.min_stock}
+        onChange={updateStockForm}
+      />
+    </label>
+
+    <label>
+      Location
+      <input
+        name="location"
+        value={stockForm.location}
+        onChange={updateStockForm}
+        placeholder="Contoh: A-1-1"
+      />
+    </label>
+
+    {addStockError && <p className="error-message">{addStockError}</p>}
+
+    <button type="submit" className="refresh-button" disabled={savingStock}>
+      {savingStock ? "Saving…" : "Save Stock"}
+    </button>
+  </form>
+)}
               )}
             </article>
           )}
