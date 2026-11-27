@@ -319,4 +319,23 @@ button {
 .stock-form .error-message {
   grid-column: 1 / -1;
 }
+.stock-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.stock-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 600px) {
+  .stock-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
 
