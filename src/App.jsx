@@ -23,16 +23,7 @@ const navigation = [
   { label: "Scrap & Defect", icon: AlertTriangle },
 ];
 
-export default function App() {
-  const [activePage, setActivePage] = useState("Dashboard");
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [stock, setStock] = useState([]);
-  const [loadingStock, setLoadingStock] = useState(false);
-  const [stockError, setStockError] = useState("");
-  const [showAddStock, setShowAddStock] = useState(false);
-const [savingStock, setSavingStock] = useState(false);
-const [addStockError, setAddStockError] = useState("");
-const [stockForm, setStockForm] = useState({
+const emptyStockForm = {
   item_code: "",
   item_name: "",
   description: "",
@@ -41,77 +32,21 @@ const [stockForm, setStockForm] = useState({
   reserved_quantity: "0",
   min_stock: "0",
   location: "",
-});
+};
 
-function updateStockForm(event) {
-  const { name, value } = event.target;
-  setStockForm((current) => ({ ...current, [name]: value }));
-}
+export default function App() {
+  const [activePage, setActivePage] = useState("Dashboard");
+  const [menuOpen, setMenuOpen] = useState(false);
 
-async function addStock(event) {
-  event.preventDefault();
-  setSavingStock(true);
-  setAddStockError("");
+  const [stock, setStock] = useState([]);
+  const [loadingStock, setLoadingStock] = useState(false);
+  const [stockError, setStockError] = useState("");
 
-  const payload = {
-    item_code: stockForm.item_code.trim(),
-    item_name: stockForm.item_name.trim(),
-    description: stockForm.description.trim() || null,
-    unit: stockForm.unit.trim(),
-    quantity: Number(stockForm.quantity),
-    reserved_quantity: Number(stockForm.reserved_quantity || 0),
-    min_stock: Number(stockForm.min_stock || 0),
-    location: stockForm.location.trim() || null,
-  };
+  const [showAddStock, setShowAddStock] = useState(false);
+  const [savingStock, setSavingStock] = useState(false);
+  const [addStockError, setAddStockError] = useState("");
+  const [stockForm, setStockForm] = useState(emptyStockForm);
 
-  if (
-    !payload.item_code ||
-    !payload.item_name ||
-    !payload.unit ||
-    stockForm.quantity === "" ||
-    !Number.isFinite(payload.quantity) ||
-    payload.quantity < 0 ||
-    !Number.isFinite(payload.reserved_quantity) ||
-    payload.reserved_quantity < 0 ||
-    !Number.isFinite(payload.min_stock) ||
-    payload.min_stock < 0
-  ) {
-    setAddStockError("Semak medan wajib dan pastikan kuantiti ialah nombor 0 atau lebih.");
-    setSavingStock(false);
-    return;
-  }
-
-  try {
-    const response = await fetch(`${API_URL}/api/stock`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    const result = await response.json();
-
-    if (!response.ok || result.success !== true) {
-      throw new Error(result.error || "Gagal menyimpan stok.");
-    }
-
-    setStockForm({
-      item_code: "",
-      item_name: "",
-      description: "",
-      unit: "",
-      quantity: "",
-      reserved_quantity: "0",
-      min_stock: "0",
-      location: "",
-    });
-    setShowAddStock(false);
-    await loadStock();
-  } catch (error) {
-    setAddStockError(error.message || "Tidak dapat menyimpan stok.");
-  } finally {
-    setSavingStock(false);
-  }
-}
   async function loadStock() {
     setLoadingStock(true);
     setStockError("");
@@ -131,6 +66,76 @@ async function addStock(event) {
       );
     } finally {
       setLoadingStock(false);
+    }
+  }
+
+  function updateStockForm(event) {
+    const { name, value } = event.target;
+
+    setStockForm((current) => ({
+      ...current,
+      [name]: value,
+    }));
+  }
+
+  async function addStock(event) {
+    event.preventDefault();
+    setSavingStock(true);
+    setAddStockError("");
+
+    const payload = {
+      item_code: stockForm.item_code.trim(),
+      item_name: stockForm.item_name.trim(),
+      description: stockForm.description.trim() || null,
+      unit: stockForm.unit.trim(),
+      quantity: Number(stockForm.quantity),
+      reserved_quantity: Number(stockForm.reserved_quantity || 0),
+      min_stock: Number(stockForm.min_stock || 0),
+      location: stockForm.location.trim() || null,
+    };
+
+    const invalid =
+      !payload.item_code ||
+      !payload.item_name ||
+      !payload.unit ||
+      stockForm.quantity === "" ||
+      !Number.isFinite(payload.quantity) ||
+      payload.quantity < 0 ||
+      !Number.isFinite(payload.reserved_quantity) ||
+      payload.reserved_quantity < 0 ||
+      !Number.isFinite(payload.min_stock) ||
+      payload.min_stock < 0;
+
+    if (invalid) {
+      setAddStockError(
+        "Semak medan wajib dan pastikan kuantiti ialah nombor 0 atau lebih."
+      );
+      setSavingStock(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/api/stock`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || result.success !== true) {
+        throw new Error(result.error || "Gagal menyimpan stok.");
+      }
+
+      setStockForm(emptyStockForm);
+      setShowAddStock(false);
+      await loadStock();
+    } catch (error) {
+      setAddStockError(error.message || "Tidak dapat menyimpan stok.");
+    } finally {
+      setSavingStock(false);
     }
   }
 
@@ -234,36 +239,141 @@ async function addStock(event) {
 
           {activePage === "Stock" && (
             <article className="panel">
-              <div className="stock-heading"></div> 
-                  <button
-  className="refresh-button"
-  onClick={() => {
-    setShowAddStock((current) => !current);
-    setAddStockError("");
-  }}
->
-  {showAddStock ? "Cancel" : "Add Stock"}
-</button>
+              <div className="stock-heading">
+                <div>
                   <h2>Stock Records</h2>
                   <p className="empty-state">
                     {stock.length} record(s) retrieved from the database.
                   </p>
                 </div>
 
-                <button
-                  className="refresh-button"
-                  onClick={loadStock}
-                  disabled={loadingStock}
-                >
-                  <RefreshCw size={16} />
-                  {loadingStock ? "Loading…" : "Refresh"}
-                </button>
+                <div className="stock-actions">
+                  <button
+                    className="refresh-button"
+                    onClick={() => {
+                      setShowAddStock((current) => !current);
+                      setAddStockError("");
+                    }}
+                  >
+                    {showAddStock ? "Cancel" : "Add Stock"}
+                  </button>
+
+                  <button
+                    className="refresh-button"
+                    onClick={loadStock}
+                    disabled={loadingStock}
+                  >
+                    <RefreshCw size={16} />
+                    {loadingStock ? "Loading…" : "Refresh"}
+                  </button>
+                </div>
               </div>
 
+              {showAddStock && (
+                <form className="stock-form" onSubmit={addStock}>
+                  <label>
+                    Item Code *
+                    <input
+                      name="item_code"
+                      value={stockForm.item_code}
+                      onChange={updateStockForm}
+                      required
+                    />
+                  </label>
+
+                  <label>
+                    Item Name *
+                    <input
+                      name="item_name"
+                      value={stockForm.item_name}
+                      onChange={updateStockForm}
+                      required
+                    />
+                  </label>
+
+                  <label>
+                    Description
+                    <input
+                      name="description"
+                      value={stockForm.description}
+                      onChange={updateStockForm}
+                    />
+                  </label>
+
+                  <label>
+                    Unit *
+                    <input
+                      name="unit"
+                      placeholder="kg / g / unit"
+                      value={stockForm.unit}
+                      onChange={updateStockForm}
+                      required
+                    />
+                  </label>
+
+                  <label>
+                    Quantity *
+                    <input
+                      type="number"
+                      min="0"
+                      step="any"
+                      name="quantity"
+                      value={stockForm.quantity}
+                      onChange={updateStockForm}
+                      required
+                    />
+                  </label>
+
+                  <label>
+                    Reserved Quantity
+                    <input
+                      type="number"
+                      min="0"
+                      step="any"
+                      name="reserved_quantity"
+                      value={stockForm.reserved_quantity}
+                      onChange={updateStockForm}
+                    />
+                  </label>
+
+                  <label>
+                    Minimum Stock
+                    <input
+                      type="number"
+                      min="0"
+                      step="any"
+                      name="min_stock"
+                      value={stockForm.min_stock}
+                      onChange={updateStockForm}
+                    />
+                  </label>
+
+                  <label>
+                    Location
+                    <input
+                      name="location"
+                      value={stockForm.location}
+                      onChange={updateStockForm}
+                      placeholder="Contoh: A-1-1"
+                    />
+                  </label>
+
+                  {addStockError && (
+                    <p className="error-message">{addStockError}</p>
+                  )}
+
+                  <button
+                    type="submit"
+                    className="refresh-button"
+                    disabled={savingStock}
+                  >
+                    {savingStock ? "Saving…" : "Save Stock"}
+                  </button>
+                </form>
+              )}
+
               {stockError && (
-                <p className="error-message">
-                  {stockError}
-                </p>
+                <p className="error-message">{stockError}</p>
               )}
 
               {loadingStock ? (
@@ -278,16 +388,21 @@ async function addStock(event) {
                     <thead>
                       <tr>
                         {Object.keys(stock[0]).map((column) => (
-                          <th key={column}>{column.replaceAll("_", " ")}</th>
+                          <th key={column}>
+                            {column.replaceAll("_", " ")}
+                          </th>
                         ))}
                       </tr>
                     </thead>
+
                     <tbody>
                       {stock.map((item, index) => (
                         <tr key={item.id ?? index}>
                           {Object.keys(stock[0]).map((column) => (
                             <td key={column}>
-                              {item[column] == null ? "—" : String(item[column])}
+                              {item[column] == null
+                                ? "—"
+                                : String(item[column])}
                             </td>
                           ))}
                         </tr>
@@ -295,274 +410,20 @@ async function addStock(event) {
                     </tbody>
                   </table>
                 </div>
-      {showAddStock && (
-  <form className="stock-form" onSubmit={addStock}>
-    <label>
-      Item Code *
-      <input
-        name="item_code"
-        value={stockForm.item_code}
-        onChange={updateStockForm}
-        required
-      />
-    </label>
-
-    <label>
-      Item Name *
-      <input
-        name="item_name"
-        value={stockForm.item_name}
-        onChange={updateStockForm}
-        required
-      />
-    </label>
-
-    <label>
-      Description
-      <input
-        name="description"
-        value={stockForm.description}
-        onChange={updateStockForm}
-      />
-    </label>
-
-    <label>
-      Unit *
-      <input
-        name="unit"
-        placeholder="kg / g / unit"
-        value={stockForm.unit}
-        onChange={updateStockForm}
-        required
-      />
-    </label>
-
-    <label>
-      Quantity *
-      <input
-        type="number"
-        min="0"
-        step="any"
-        name="quantity"
-        value={stockForm.quantity}
-        onChange={updateStockForm}
-        required
-      />
-    </label>
-
-    <label>
-      Reserved Quantity
-      <input
-        type="number"
-        min="0"
-        step="any"
-        name="reserved_quantity"
-        value={stockForm.reserved_quantity}
-        onChange={updateStockForm}
-      />
-    </label>
-
-    <label>
-      Minimum Stock
-      <input
-        type="number"
-        min="0"
-        step="any"
-        name="min_stock"
-        value={stockForm.min_stock}
-        onChange={updateStockForm}
-      />
-    </label>
-
-    <label>
-      Location
-      <input
-        name="location"
-        value={stockForm.location}
-        onChange={updateStockForm}
-        placeholder="Contoh: A-1-1"
-      />
-    </label>
-
-    {addStockError && <p className="error-message">{addStockError}</p>}
-
-    <button type="submit" className="refresh-button" disabled={savingStock}>
-      {savingStock ? "Saving…" : "Save Stock"}
-    </button>
-  </form>
-)}
               )}
             </article>
           )}
 
-          {activePage === "Stock" && (
-  <article className="panel">
-    <div className="stock-heading">
-      <div>
-        <h2>Stock Records</h2>
-        <p className="empty-state">
-          {stock.length} record(s) retrieved from the database.
-        </p>
-      </div>
-
-      <div className="stock-actions">
-        <button
-          className="refresh-button"
-          onClick={() => {
-            setShowAddStock((current) => !current);
-            setAddStockError("");
-          }}
-        >
-          {showAddStock ? "Cancel" : "Add Stock"}
-        </button>
-
-        <button
-          className="refresh-button"
-          onClick={loadStock}
-          disabled={loadingStock}
-        >
-          <RefreshCw size={16} />
-          {loadingStock ? "Loading…" : "Refresh"}
-        </button>
-      </div>
+          {activePage !== "Dashboard" && activePage !== "Stock" && (
+            <article className="panel">
+              <h2>{activePage}</h2>
+              <p className="empty-state">
+                This module will be built in the next steps.
+              </p>
+            </article>
+          )}
+        </section>
+      </main>
     </div>
-
-    {showAddStock && (
-      <form className="stock-form" onSubmit={addStock}>
-        <label>
-          Item Code *
-          <input
-            name="item_code"
-            value={stockForm.item_code}
-            onChange={updateStockForm}
-            required
-          />
-        </label>
-
-        <label>
-          Item Name *
-          <input
-            name="item_name"
-            value={stockForm.item_name}
-            onChange={updateStockForm}
-            required
-          />
-        </label>
-
-        <label>
-          Description
-          <input
-            name="description"
-            value={stockForm.description}
-            onChange={updateStockForm}
-          />
-        </label>
-
-        <label>
-          Unit *
-          <input
-            name="unit"
-            placeholder="kg / g / unit"
-            value={stockForm.unit}
-            onChange={updateStockForm}
-            required
-          />
-        </label>
-
-        <label>
-          Quantity *
-          <input
-            type="number"
-            min="0"
-            step="any"
-            name="quantity"
-            value={stockForm.quantity}
-            onChange={updateStockForm}
-            required
-          />
-        </label>
-
-        <label>
-          Reserved Quantity
-          <input
-            type="number"
-            min="0"
-            step="any"
-            name="reserved_quantity"
-            value={stockForm.reserved_quantity}
-            onChange={updateStockForm}
-          />
-        </label>
-
-        <label>
-          Minimum Stock
-          <input
-            type="number"
-            min="0"
-            step="any"
-            name="min_stock"
-            value={stockForm.min_stock}
-            onChange={updateStockForm}
-          />
-        </label>
-
-        <label>
-          Location
-          <input
-            name="location"
-            value={stockForm.location}
-            onChange={updateStockForm}
-            placeholder="Contoh: A-1-1"
-          />
-        </label>
-
-        {addStockError && (
-          <p className="error-message">{addStockError}</p>
-        )}
-
-        <button
-          type="submit"
-          className="refresh-button"
-          disabled={savingStock}
-        >
-          {savingStock ? "Saving…" : "Save Stock"}
-        </button>
-      </form>
-    )}
-
-    {stockError && (
-      <p className="error-message">{stockError}</p>
-    )}
-
-    {loadingStock ? (
-      <p className="empty-state">Loading stock records…</p>
-    ) : stockError ? null : stock.length === 0 ? (
-      <p className="empty-state">
-        Tiada rekod stok dalam database buat masa ini.
-      </p>
-    ) : (
-      <div className="table-wrap">
-        <table className="data-table">
-          <thead>
-            <tr>
-              {Object.keys(stock[0]).map((column) => (
-                <th key={column}>{column.replaceAll("_", " ")}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {stock.map((item, index) => (
-              <tr key={item.id ?? index}>
-                {Object.keys(stock[0]).map((column) => (
-                  <td key={column}>
-                    {item[column] == null ? "—" : String(item[column])}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    )}
-  </article>
-)}
+  );
+}
