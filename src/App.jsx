@@ -395,16 +395,174 @@ async function addStock(event) {
             </article>
           )}
 
-          {activePage !== "Dashboard" && activePage !== "Stock" && (
-            <article className="panel">
-              <h2>{activePage}</h2>
-              <p className="empty-state">
-                This module will be built in the next steps.
-              </p>
-            </article>
-          )}
-        </section>
-      </main>
+          {activePage === "Stock" && (
+  <article className="panel">
+    <div className="stock-heading">
+      <div>
+        <h2>Stock Records</h2>
+        <p className="empty-state">
+          {stock.length} record(s) retrieved from the database.
+        </p>
+      </div>
+
+      <div className="stock-actions">
+        <button
+          className="refresh-button"
+          onClick={() => {
+            setShowAddStock((current) => !current);
+            setAddStockError("");
+          }}
+        >
+          {showAddStock ? "Cancel" : "Add Stock"}
+        </button>
+
+        <button
+          className="refresh-button"
+          onClick={loadStock}
+          disabled={loadingStock}
+        >
+          <RefreshCw size={16} />
+          {loadingStock ? "Loading…" : "Refresh"}
+        </button>
+      </div>
     </div>
-  );
-}
+
+    {showAddStock && (
+      <form className="stock-form" onSubmit={addStock}>
+        <label>
+          Item Code *
+          <input
+            name="item_code"
+            value={stockForm.item_code}
+            onChange={updateStockForm}
+            required
+          />
+        </label>
+
+        <label>
+          Item Name *
+          <input
+            name="item_name"
+            value={stockForm.item_name}
+            onChange={updateStockForm}
+            required
+          />
+        </label>
+
+        <label>
+          Description
+          <input
+            name="description"
+            value={stockForm.description}
+            onChange={updateStockForm}
+          />
+        </label>
+
+        <label>
+          Unit *
+          <input
+            name="unit"
+            placeholder="kg / g / unit"
+            value={stockForm.unit}
+            onChange={updateStockForm}
+            required
+          />
+        </label>
+
+        <label>
+          Quantity *
+          <input
+            type="number"
+            min="0"
+            step="any"
+            name="quantity"
+            value={stockForm.quantity}
+            onChange={updateStockForm}
+            required
+          />
+        </label>
+
+        <label>
+          Reserved Quantity
+          <input
+            type="number"
+            min="0"
+            step="any"
+            name="reserved_quantity"
+            value={stockForm.reserved_quantity}
+            onChange={updateStockForm}
+          />
+        </label>
+
+        <label>
+          Minimum Stock
+          <input
+            type="number"
+            min="0"
+            step="any"
+            name="min_stock"
+            value={stockForm.min_stock}
+            onChange={updateStockForm}
+          />
+        </label>
+
+        <label>
+          Location
+          <input
+            name="location"
+            value={stockForm.location}
+            onChange={updateStockForm}
+            placeholder="Contoh: A-1-1"
+          />
+        </label>
+
+        {addStockError && (
+          <p className="error-message">{addStockError}</p>
+        )}
+
+        <button
+          type="submit"
+          className="refresh-button"
+          disabled={savingStock}
+        >
+          {savingStock ? "Saving…" : "Save Stock"}
+        </button>
+      </form>
+    )}
+
+    {stockError && (
+      <p className="error-message">{stockError}</p>
+    )}
+
+    {loadingStock ? (
+      <p className="empty-state">Loading stock records…</p>
+    ) : stockError ? null : stock.length === 0 ? (
+      <p className="empty-state">
+        Tiada rekod stok dalam database buat masa ini.
+      </p>
+    ) : (
+      <div className="table-wrap">
+        <table className="data-table">
+          <thead>
+            <tr>
+              {Object.keys(stock[0]).map((column) => (
+                <th key={column}>{column.replaceAll("_", " ")}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {stock.map((item, index) => (
+              <tr key={item.id ?? index}>
+                {Object.keys(stock[0]).map((column) => (
+                  <td key={column}>
+                    {item[column] == null ? "—" : String(item[column])}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </article>
+)}
